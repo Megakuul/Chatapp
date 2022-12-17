@@ -1,0 +1,3 @@
+*.hcl
+*.tfstate
+/.terraform
