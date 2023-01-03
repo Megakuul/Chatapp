@@ -13,40 +13,102 @@ provider "aws" {
     region = "us-east-1"
 }
 
-resource "aws_vpc" "vpc" {
+resource "aws_vpc" "chatapp-vpc" {
     cidr_block = "10.0.0.0/16"
+    tags = {
+        Name = "chatapp-vpc"
+    }
 }
 
-resource "aws_subnet" "public" {
-    vpc_id = aws_vpc.vpc.id
-    cidr_block = "10.0.1.0/24"
-    map_public_ip_on_lauch = true
+resource "aws_subnet" "chatapp-vpc-subnet01" {
+  vpc_id     = aws_vpc.chatapp-vpc.id
+  cidr_block = "10.0.1.0/24"
+
+  tags = {
+    Name = "chatapp-vpc-subnet01"
+  }
 }
 
-resource "aws_ecs_cluster" "cluster" {
-    name = "chatapp-webserver"
+resource "aws_subnet" "chatapp-vpc-subnet02" {
+  vpc_id     = aws_vpc.chatapp-vpc.id
+  cidr_block = "10.0.2.0/24"
+
+  tags = {
+    Name = "chatapp-vpc-subnet02"
+  }
 }
 
-resource "aws_ecs_task_definition" "task" {
-  family = "chatapp-webserver-tasks"
-  container_definitions = <<EOF
-    [
-        {
-            "name": "chatapp_webserver01",
-            "image": "nginx:latest",
-            "cpu": 1,
-            "memory": 512,
-            "essential": true
-        }
-    ]
-EOF
+resource "aws_route_table" "chatapp-vpc-routetable" {
+  vpc_id = aws_vpc.chatapp-vpc.id
+
+  tags = {
+    Name = "chatapp-vpc-routetable"
+  }
 }
 
-resource "aws_ecs_service" "service" {
-    name            = "chatapp-webservice"
-    cluster         = aws_ecs_cluster.cluster.id
-    task_definition = aws_ecs_task_definition.task.arn
-    desired_count = 1
+//Create gateway
+resource "aws_internet_gateway" "chatapp-vpc-gateway" {
+  vpc_id = aws_vpc.chatapp-vpc.id
+
+  tags = {
+    Name = "chatapp-vpc-gateway"
+  }
 }
+
+//Create the Route to the default gateway (this one we created above)
+resource "aws_route" "internet" {
+  route_table_id         = aws_route_table.chatapp-vpc-routetable.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.chatapp-vpc-gateway.id
+}
+
+//Now we have to create two Security groups, one to allow HTTP traffic from the Container to the Loadbalancer,
+//and one to allow HTTPS traffic from the WAN to the Loadbalancer.
+
+//This is the security group for the nginx container
+resource "aws_security_group" "chatapp-vpc-sec-http-allow-nginx" {
+  name   = "chatapp-vpc-sec-http-allow-nginx"
+  vpc_id = aws_vpc.chatapp-vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+//This is the security group for the loadbalancer
+resource "aws_security_group" "chatapp-vpc-sec-https-allow-loadbalancer" {
+  name   = "chatapp-vpc-sec-http-allow-loadbalancer"
+  vpc_id = aws_vpc.chatapp-vpc.id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  //Here we will still allow HTTP, but with a listener rule on the loadbalancer we are going to redirect the HTTP to HTTPS
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 
 
