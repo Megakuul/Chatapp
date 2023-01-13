@@ -8,6 +8,10 @@ terraform {
     required_version = ">= 1.2.0"
 }
 
+//Get current path
+locals {
+  execution_path = "${path.module}"
+}
 
 provider "aws" {
     region = "us-east-1"
@@ -109,6 +113,43 @@ resource "aws_security_group" "chatapp-vpc-sec-https-allow-loadbalancer" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+
+//Frontend//-------------------------------------------------------------------
+//Frontend//-------------------------------------------------------------------
+############
+//Frontend//-------------------------------------------------------------------
+//Frontend//-------------------------------------------------------------------
+
+//Create S3 Bucket
+resource "aws_s3_bucket" "chatapp-s3-frontend" {
+  bucket = "chatapp-s3-frontend"
+}
+
+resource "aws_s3_bucket_policy" "chatapp-s3-public-policy" {
+  bucket = aws_s3_bucket.chatapp-s3-frontend.id
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AddPerm",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+        }
+    ]
+}
+EOF
+}
+
+//Frontend//-------------------------------------------------------------------
+//Frontend//-------------------------------------------------------------------
+############
+//Frontend//-------------------------------------------------------------------
+//Frontend//-------------------------------------------------------------------
 
 
 
