@@ -17,6 +17,7 @@ provider "aws" {
     region = "us-east-1"
 }
 
+//Create chatapp vpc
 resource "aws_vpc" "chatapp-vpc" {
     cidr_block = "10.0.0.0/16"
     tags = {
@@ -24,6 +25,7 @@ resource "aws_vpc" "chatapp-vpc" {
     }
 }
 
+//Create Subnet Nr. 1
 resource "aws_subnet" "chatapp-vpc-subnet01" {
   vpc_id     = aws_vpc.chatapp-vpc.id
   cidr_block = "10.0.1.0/24"
@@ -33,6 +35,7 @@ resource "aws_subnet" "chatapp-vpc-subnet01" {
   }
 }
 
+//Create Subnet Nr. 2
 resource "aws_subnet" "chatapp-vpc-subnet02" {
   vpc_id     = aws_vpc.chatapp-vpc.id
   cidr_block = "10.0.2.0/24"
@@ -42,6 +45,7 @@ resource "aws_subnet" "chatapp-vpc-subnet02" {
   }
 }
 
+//Create route table
 resource "aws_route_table" "chatapp-vpc-routetable" {
   vpc_id = aws_vpc.chatapp-vpc.id
 
@@ -114,42 +118,24 @@ resource "aws_security_group" "chatapp-vpc-sec-https-allow-loadbalancer" {
   }
 }
 
-
-//Frontend//-------------------------------------------------------------------
-//Frontend//-------------------------------------------------------------------
-############
-//Frontend//-------------------------------------------------------------------
-//Frontend//-------------------------------------------------------------------
-
-//Create S3 Bucket
-resource "aws_s3_bucket" "chatapp-s3-frontend" {
-  bucket = "chatapp-s3-frontend"
+//Allow the Database to connect
+resource "aws_security_group" "chatapp-sec-db-egress" {
+  name        = "chatapp-sec-db-egress"
+  description = "Allows db connection from security group chatapp-sec-db-ingress"
+  vpc_id      = "${aws_vpc.srv-vpc.id}"
+  ingress {
+    from_port = 3306
+    to_port = 3306
+    protocol = "-1"
+    security_groups = ["${aws_security_group.chatapp-sec-db-ingress.id}"]
+  }  
 }
 
-resource "aws_s3_bucket_policy" "chatapp-s3-public-policy" {
-  bucket = aws_s3_bucket.chatapp-s3-frontend.id
-
-  policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AddPerm",
-            "Effect": "Allow",
-            "Principal": "*",
-            "Action": "s3:GetObject",
-            "Resource": "arn:aws:s3:::example-bucket/*"
-        }
-    ]
-}
-EOF
+//Allow the clients with this security group to connect to the database with the security group "chatapp-sec-db-egress"
+resource "aws_security_group" "chatapp-sec-db-ingress" {
+  name        = "chatapp-sec-db-ingress"
+  description = "Allows all connections from selected security group"
+  vpc_id      = "${aws_vpc.chatapp-vpc.id}"
 }
 
-//Frontend//-------------------------------------------------------------------
-//Frontend//-------------------------------------------------------------------
-############
-//Frontend//-------------------------------------------------------------------
-//Frontend//-------------------------------------------------------------------
-
-
-
+//Now we want to create a management vm to controll the stuff, the vm is going to be a Windows Server 2022 instance
