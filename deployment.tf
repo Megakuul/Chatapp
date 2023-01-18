@@ -20,6 +20,8 @@ provider "aws" {
 //Create chatapp vpc
 resource "aws_vpc" "chatapp-vpc" {
     cidr_block = "10.0.0.0/16"
+    enable_dns_hostnames = true
+    enable_dns_support = true
     tags = {
         Name = "chatapp-vpc"
     }
@@ -139,3 +141,30 @@ resource "aws_security_group" "chatapp-sec-db-ingress" {
 }
 
 //Now we want to create a management vm to controll the stuff, the vm is going to be a Windows Server 2022 instance
+
+//Create subnet for database
+resource "aws_db_subnet_group" "chatapp-db-01-subnet" {
+  name       = "db-group"
+  subnet_ids = [aws_subnet.chatapp-vpc-subnet01.id, aws_subnet.chatapp-vpc-subnet02.id ]
+  tags = {
+    Name = "db-group"
+  }
+}
+
+//Create database instance
+resource "aws_db_instance" "chatapp-db-01" { 
+  allocated_storage    = 20
+  storage_type         = "gp2"
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = "db.t3.micro"
+  identifier           = "chatapp-db-01"
+  username             = "root"
+  password             = "sml12345"
+  publicly_accessible  = true
+  backup_retention_period = 2
+  skip_final_snapshot = true
+  vpc_security_group_ids = [aws_security_group.chatapp-sec-db-egress.id]
+  db_subnet_group_name    = "${aws_db_subnet_group.chatapp-db-01-subnet}"
+}
+
