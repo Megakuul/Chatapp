@@ -38,9 +38,10 @@ app.listen(API_PORT, () => {
 
 app.get("/chats", (req: Request, res: Response) => {
     const code = req.query.code;
-    sqlcon.query("", (err: Error, result: any, fields: FieldInfo) => {
+
+    sqlcon.query("SELECT  FROM ", (err: Error, result: any, fields: FieldInfo) => {
         if (err!=null) throw err;
-        res.send(fields.);
+        res.send(fields);
     });
     
 });

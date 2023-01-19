@@ -29,10 +29,10 @@ app.listen(API_PORT, function () {
 });
 app.get("/chats", function (req, res) {
     var code = req.query.code;
-    sqlcon.query("", function (err, result, fields) {
+    sqlcon.query("SELECT  FROM ", function (err, result, fields) {
         if (err != null)
             throw err;
-        res.send(fields.);
+        res.send(fields);
     });
 });
 //# sourceMappingURL=main.js.map
