@@ -1,1 +1,0 @@
-aws s3 sync .\frontend\build\web\ s3://chatapp-s3-frontend/ --acl public-read

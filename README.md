@@ -1,0 +1,1 @@
+**IMPORTANT** if the Terraform script doesnt work, you have to add a default Route to 0.0.0.0/0 in the route table and redeploy the container

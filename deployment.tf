@@ -30,7 +30,9 @@ resource "aws_vpc" "chatapp-vpc" {
 //Create Subnet Nr. 1
 resource "aws_subnet" "chatapp-vpc-subnet01" {
   vpc_id     = aws_vpc.chatapp-vpc.id
+  availability_zone = "us-east-1a"
   cidr_block = "10.0.1.0/24"
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "chatapp-vpc-subnet01"
@@ -40,19 +42,12 @@ resource "aws_subnet" "chatapp-vpc-subnet01" {
 //Create Subnet Nr. 2
 resource "aws_subnet" "chatapp-vpc-subnet02" {
   vpc_id     = aws_vpc.chatapp-vpc.id
+  availability_zone = "us-east-1b"
   cidr_block = "10.0.2.0/24"
+  map_public_ip_on_launch = true
 
   tags = {
     Name = "chatapp-vpc-subnet02"
-  }
-}
-
-//Create route table
-resource "aws_route_table" "chatapp-vpc-routetable" {
-  vpc_id = aws_vpc.chatapp-vpc.id
-
-  tags = {
-    Name = "chatapp-vpc-routetable"
   }
 }
 
@@ -65,70 +60,32 @@ resource "aws_internet_gateway" "chatapp-vpc-gateway" {
   }
 }
 
-//Create the Route to the default gateway (this one we created above)
+//Create route table
+resource "aws_route_table" "chatapp-vpc-routetable" {
+  vpc_id = aws_vpc.chatapp-vpc.id
+
+  tags = {
+    Name = "chatapp-vpc-routetable"
+  }
+}
+
+//Create a route from the default gateway to the internet (next gateway hop)
 resource "aws_route" "internet" {
   route_table_id         = aws_route_table.chatapp-vpc-routetable.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.chatapp-vpc-gateway.id
 }
 
-//Now we have to create two Security groups, one to allow HTTP traffic from the Container to the Loadbalancer,
-//and one to allow HTTPS traffic from the WAN to the Loadbalancer.
-
-//This is the security group for the nginx container
-resource "aws_security_group" "chatapp-vpc-sec-http-allow-nginx" {
-  name   = "chatapp-vpc-sec-http-allow-nginx"
-  vpc_id = aws_vpc.chatapp-vpc.id
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-//This is the security group for the loadbalancer
-resource "aws_security_group" "chatapp-vpc-sec-https-allow-loadbalancer" {
-  name   = "chatapp-vpc-sec-http-allow-loadbalancer"
-  vpc_id = aws_vpc.chatapp-vpc.id
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  //Here we will still allow HTTP, but with a listener rule on the loadbalancer we are going to redirect the HTTP to HTTPS
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
 
 //Allow the Database to connect
 resource "aws_security_group" "chatapp-sec-db-egress" {
   name        = "chatapp-sec-db-egress"
   description = "Allows db connection from security group chatapp-sec-db-ingress"
-  vpc_id      = "${aws_vpc.srv-vpc.id}"
+  vpc_id      = "${aws_vpc.chatapp-vpc.id}"
   ingress {
     from_port = 3306
     to_port = 3306
-    protocol = "-1"
+    protocol = "tcp"
     security_groups = ["${aws_security_group.chatapp-sec-db-ingress.id}"]
   }  
 }
@@ -140,7 +97,20 @@ resource "aws_security_group" "chatapp-sec-db-ingress" {
   vpc_id      = "${aws_vpc.chatapp-vpc.id}"
 }
 
-//Now we want to create a management vm to controll the stuff, the vm is going to be a Windows Server 2022 instance
+//for debug purposes you can also use a security group who allows traffic from everywhere to the database
+/*
+resource "aws_security_group" "chatapp-sec-db-egress-debug" {
+  name = "chatapp-sec-db-egress-debug"
+  description = "Allows connections from everywhere"
+  vpc_id = "${aws_vpc.chatapp-vpc.id}"
+  ingress {
+    from_port = 3306
+    to_port = 3306
+    protocoll = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+*/
 
 //Create subnet for database
 resource "aws_db_subnet_group" "chatapp-db-01-subnet" {
@@ -165,6 +135,98 @@ resource "aws_db_instance" "chatapp-db-01" {
   backup_retention_period = 2
   skip_final_snapshot = true
   vpc_security_group_ids = [aws_security_group.chatapp-sec-db-egress.id]
-  db_subnet_group_name    = "${aws_db_subnet_group.chatapp-db-01-subnet}"
+  db_subnet_group_name    = "${aws_db_subnet_group.chatapp-db-01-subnet.id}"
 }
 
+//Create Security Group to open port 80
+resource "aws_security_group" "chatapp-api-sec" {
+  name = "chatapp-api-sec"
+  description = "Exposes port 80 to any IPV4"
+  vpc_id      = "${aws_vpc.chatapp-vpc.id}"
+  ingress {
+    from_port = 80
+    to_port = 80
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+//Create task definition for ECS container
+resource "aws_ecs_task_definition" "chatapp-api-taskdefinition" {
+  family = "chatapp-api-taskdefinition"
+  network_mode = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu = 256
+  memory = 512
+  container_definitions = jsonencode([
+    {
+      "name": "fargate-app", 
+      "image": "public.ecr.aws/docker/library/httpd:latest", 
+      "portMappings": [
+        {
+            "containerPort": 80, 
+            "hostPort": 80, 
+            "protocol": "tcp"
+        }
+      ], 
+      "essential": true, 
+      "entryPoint": [
+        "sh",
+        "-c"
+      ], 
+      "command": [
+          "/bin/sh -c \"echo '<html> <head> <title>Amazon ECS Sample App</title> <style>body {margin-top: 40px; background-color: #333;} </style> </head><body> <div style=color:white;text-align:center> <h1>Amazon ECS Sample App</h1> <h2>Congratulations!</h2> <p>Your application is now running on a container in Amazon ECS.</p> </div></body></html>' >  /usr/local/apache2/htdocs/index.html && httpd-foreground\""
+      ]
+    }
+  ])
+}
+
+//Create main ECS cluster
+resource "aws_ecs_cluster" "chatapp-maincluster" {
+  name = "chatapp-maincluster"
+}
+
+//Create application Loadbalancer
+resource "aws_alb" "chatapp-api-alb" {
+  name = "chatapp-api-alb"
+  internal = false
+  security_groups = [aws_security_group.chatapp-api-sec.id]
+  subnets = [aws_subnet.chatapp-vpc-subnet01.id, aws_subnet.chatapp-vpc-subnet02.id]
+}
+
+resource "aws_alb_target_group" "chatapp-api-targetgroup" {
+  name = "chatapp-api-targetgroup"
+  port = 80
+  protocol = "HTTP"
+  target_type = "ip"
+  vpc_id = aws_vpc.chatapp-vpc.id
+}
+
+resource "aws_alb_listener" "chatapp-api-listener" {
+  load_balancer_arn = aws_alb.chatapp-api-alb.arn
+  port = "80"
+  protocol = "HTTP"
+
+  default_action {
+    target_group_arn = aws_alb_target_group.chatapp-api-targetgroup.arn
+    type = "forward"
+  }
+}
+
+//Create service
+resource "aws_ecs_service" "chatapp-api-service" {
+  name = "chatapp-api-service"
+  task_definition = aws_ecs_task_definition.chatapp-api-taskdefinition.id
+  cluster = aws_ecs_cluster.chatapp-maincluster.id
+  desired_count = 1
+  launch_type = "FARGATE"
+  network_configuration {
+    security_groups = [aws_security_group.chatapp-api-sec.id]
+    subnets = [aws_subnet.chatapp-vpc-subnet01.id, aws_subnet.chatapp-vpc-subnet02.id]
+  }
+  load_balancer {
+    target_group_arn = aws_ecs_task_definition.chatapp-api-taskdefinition.arn
+    container_name = "chatapp-api-service"
+    container_port = 80
+  }
+}
