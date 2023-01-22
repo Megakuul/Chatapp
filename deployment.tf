@@ -237,7 +237,7 @@ resource "aws_ecs_service" "chatapp-api-service" {
     subnets = [aws_subnet.chatapp-vpc-subnet01.id, aws_subnet.chatapp-vpc-subnet02.id]
   }
   load_balancer {
-    target_group_arn = aws_alb_target_group.chatapp-api-targetgroup.id
+    target_group_arn = aws_alb_target_group.chatapp-api-targetgroup.arn
     container_name = "chatapp-api-service"
     container_port = 80
   }
