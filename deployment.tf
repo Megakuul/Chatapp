@@ -27,30 +27,6 @@ resource "aws_vpc" "chatapp-vpc" {
     }
 }
 
-//Create Subnet Nr. 1
-resource "aws_subnet" "chatapp-vpc-subnet01" {
-  vpc_id     = aws_vpc.chatapp-vpc.id
-  availability_zone = "us-east-1a"
-  cidr_block = "10.0.1.0/24"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "chatapp-vpc-subnet01"
-  }
-}
-
-//Create Subnet Nr. 2
-resource "aws_subnet" "chatapp-vpc-subnet02" {
-  vpc_id     = aws_vpc.chatapp-vpc.id
-  availability_zone = "us-east-1b"
-  cidr_block = "10.0.2.0/24"
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "chatapp-vpc-subnet02"
-  }
-}
-
 //Create gateway
 resource "aws_internet_gateway" "chatapp-vpc-gateway" {
   vpc_id = aws_vpc.chatapp-vpc.id
@@ -68,6 +44,42 @@ resource "aws_route_table" "chatapp-vpc-routetable" {
     Name = "chatapp-vpc-routetable"
   }
 }
+
+//Create Subnet Nr. 1
+resource "aws_subnet" "chatapp-vpc-subnet01" {
+  vpc_id     = aws_vpc.chatapp-vpc.id
+  availability_zone = "us-east-1a"
+  cidr_block = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "chatapp-vpc-subnet01"
+  }
+}
+//Route Subnet association
+resource "aws_route_table_association" "chatapp-vpc-rt-subnet01" {
+  subnet_id = aws_subnet.chatapp-vpc-subnet01.id
+  route_table_id = aws_route_table.chatapp-vpc-routetable.id
+}
+
+//Create Subnet Nr. 2
+resource "aws_subnet" "chatapp-vpc-subnet02" {
+  vpc_id     = aws_vpc.chatapp-vpc.id
+  availability_zone = "us-east-1b"
+  cidr_block = "10.0.2.0/24"
+  map_public_ip_on_launch = true
+  
+
+  tags = {
+    Name = "chatapp-vpc-subnet02"
+  }
+}
+//Route Subnet association
+resource "aws_route_table_association" "chatapp-vpc-rt-subnet02" {
+  subnet_id = aws_subnet.chatapp-vpc-subnet02.id
+  route_table_id = aws_route_table.chatapp-vpc-routetable.id
+}
+
 
 //Create a route from the default gateway to the internet (next gateway hop)
 resource "aws_route" "internet" {
@@ -160,7 +172,7 @@ resource "aws_ecs_task_definition" "chatapp-api-taskdefinition" {
   memory = 512
   container_definitions = jsonencode([
     {
-      "name": "fargate-app", 
+      "name": "chatapp-api-service", 
       "image": "public.ecr.aws/docker/library/httpd:latest", 
       "portMappings": [
         {
@@ -225,7 +237,7 @@ resource "aws_ecs_service" "chatapp-api-service" {
     subnets = [aws_subnet.chatapp-vpc-subnet01.id, aws_subnet.chatapp-vpc-subnet02.id]
   }
   load_balancer {
-    target_group_arn = aws_ecs_task_definition.chatapp-api-taskdefinition.arn
+    target_group_arn = aws_alb_target_group.chatapp-api-targetgroup.id
     container_name = "chatapp-api-service"
     container_port = 80
   }
