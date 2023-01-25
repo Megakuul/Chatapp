@@ -242,3 +242,8 @@ resource "aws_ecs_service" "chatapp-api-service" {
     container_port = 80
   }
 }
+
+resource "aws_lb_target_group_attachment" "chatapp-api-attachment" {
+  target_group_arn = aws_alb_target_group.chatapp-api-targetgroup.arn
+  target_id        = aws_ecs_service.chatapp-api-service.id
+}
