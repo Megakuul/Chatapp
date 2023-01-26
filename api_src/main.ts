@@ -36,12 +36,48 @@ app.listen(API_PORT, () => {
     console.log("Started API endpoint on port: " + API_PORT);
 });
 
-app.get("/chats", (req: Request, res: Response) => {
+app.get("/messages", (req: Request, res: Response) => {
     const code = req.query.code;
+    const count = req.query.count;
 
-    sqlcon.query("SELECT  FROM ", (err: Error, result: any, fields: FieldInfo) => {
+    const query = "SELECT * FROM message where s"
+
+    sqlcon.query(query, (err: Error, result: any, fields: FieldInfo) => {
         if (err!=null) throw err;
         res.send(fields);
     });
-    
+});
+
+app.post("/session", (req: Request, res: Response) => {
+    const code = req.query.code;
+
+    const query = `
+        PREPARE createSession FROM 'INSERT INTO sessions (joincode) Values (?)';
+        SET @code = '${code}';
+        EXECUTE createSession USING @code;
+    `;
+
+    sqlcon.query(query, (err: Error, result: any, fields: FieldInfo) => {
+        if (err==null||err==undefined) {
+            res.json({
+                Success: false,
+                Error: err
+            });
+            return;
+        }
+        res.json({
+            Success: true,
+            Error: null
+        })
+    });
+});
+
+app.post("/message", (req: Request, res: Response) => {
+    const code = req.query.code;
+
+    const query = "INSERT INTO message (name, address) VALUES ('Company Inc', 'Highway 37')";
+
+    sqlcon.query(query, (err: Error, result: any, fields: FieldInfo) => {
+
+    });
 });

@@ -41,7 +41,7 @@ class _chatState extends State<chat> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.vertical,
                   controller: _scrollControlr,
-                  child: Messages(),
+                  child: Messages(api_url: api_url, messagesToFetch: 50),
                 )
               ),
               Expanded(
@@ -141,11 +141,11 @@ class _MessagesState extends State<Messages> {
       future: messages,
       builder: (context, snapshot) {
           if (snapshot.hasData) {
-            return GetMessageList(snapshot.data);
+            //return GetMessageList(snapshot.data);
           } else if (snapshot.hasError) {
             return Text("Error${snapshot.error}");
           }
-          return CircularProgressIndicator();
+          return const CircularProgressIndicator();
       },
     );
   }

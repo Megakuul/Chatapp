@@ -1,6 +1,4 @@
 #Execute this file to create the database
-#If the connection to the database from nodejs doesnt work, you have to execute the code below to the user your connecting to
-#ALTER USER 'api'@'localhost' IDENTIFIED WITH mysql_native_password BY 'password';
 
 CREATE DATABASE chatapp;
 
@@ -20,3 +18,7 @@ CREATE TABLE message (
 	Primary Key (p_message_id),
     foreign key (fk_sessions_id) References sessions(p_sessions_id)
 );
+
+CREATE USER api IDENTIFIED WITH mysql_native_password BY 'sml12345';
+
+GRANT SELECT, INSERT, DELETE ON * TO api;
