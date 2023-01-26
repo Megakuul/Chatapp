@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-Future<List<dynamic>> fetchMessages(String uri) async {
+Future<Map<String, dynamic>> fetchMessages(String uri) async {
   final response = await http.get(Uri.parse(uri));
 
   if (response.statusCode == 200) {
@@ -17,7 +17,6 @@ Future<bool> postMessage(String uri, Object body) async {
   try {
     response = await http.post(Uri.parse(uri), body: json.encode(body), headers: {"Content-Type": "application/json"});
   } catch (Error) {
-    print("Haslsdf");
     return false;
   }
 

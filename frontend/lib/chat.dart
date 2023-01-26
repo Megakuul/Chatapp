@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:frontend/apiConnector.dart';
 import 'package:frontend/main.dart';
 
+int messagesToFetch = 50;
+
 class chat extends StatefulWidget {
   final String code;
 
@@ -13,8 +15,9 @@ class chat extends StatefulWidget {
 
 class _chatState extends State<chat> {
 
-  TextEditingController textControlr = TextEditingController();
+  final TextEditingController _textControlr = TextEditingController();
   String api_url = "$api_base_url?code=";
+  final ScrollController _scrollControlr = ScrollController();
 
   @override
   Widget build (BuildContext context) {
@@ -37,6 +40,7 @@ class _chatState extends State<chat> {
                 flex: 8,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.vertical,
+                  controller: _scrollControlr,
                   child: Messages(),
                 )
               ),
@@ -45,7 +49,7 @@ class _chatState extends State<chat> {
                 child: Align(
                   alignment: Alignment.center,
                   child: TextField(
-                    controller: textControlr,
+                    controller: _textControlr,
                     style: const TextStyle(color: Colors.white70, fontSize: 16),
                     decoration: InputDecoration(
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width-400, maxHeight: 50),
@@ -58,7 +62,8 @@ class _chatState extends State<chat> {
                     ),
                     onSubmitted: (text) async {
                       if (await postMessage(api_url, {text: text})) {
-                        textControlr.clear();
+                        _textControlr.clear();
+                        _scrollControlr.jumpTo(_scrollControlr.position.maxScrollExtent);
                         return;
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,36 +84,69 @@ class _chatState extends State<chat> {
   }
 }
 
-class Messages extends StatelessWidget {
-  const Messages({
-    Key? key,
-  }) : super(key: key);
+class Messages extends StatefulWidget {
+  final int messagesToFetch;
+  final String api_url;
+  const Messages({super.key, required this.messagesToFetch, required this.api_url});
+
+  State<Messages> createState() => _MessagesState();
+}
+
+class _MessagesState extends State<Messages> {
+
+  Widget GetMessageList(Map<String, dynamic>? obj) {
+    List<Widget> tempList = [];
+
+    if (obj==null) {
+      return const Text("Failed to load Messages");
+    }
+
+    List<dynamic> list = obj['messages'];
+
+    for (var value in list) {
+      tempList.add(Container(
+        margin: const EdgeInsets.only(top: 30, bottom: 30),
+        padding: const EdgeInsets.all(30),
+        color: Colors.white,
+        child: Row(
+          children: [
+            Expanded(
+              flex: 8,
+              child: Text(value["text"]),
+            ),
+            Expanded(
+              child: Text(value["creationTime"]),
+            )
+          ],
+        ),
+      ));
+    }
+
+    return Column(
+      children: tempList
+    );
+  }
+
+  late Future<Map<String, dynamic>> messages;
+
+  @override
+  void initState() {
+    super.initState();
+    messages = fetchMessages(widget.api_url);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          margin: EdgeInsets.only(top: 200, bottom: 200),
-          height: 300,
-          width: 1200,
-          color: Colors.white,
-          child: Text("Hallooo"),
-        ),
-        Container(
-          margin: EdgeInsets.only(top: 200, bottom: 200),
-          height: 300,
-          width: 1200,
-          color: Colors.white,
-          child: Text("Hallooo"),
-        ),Container(
-          margin: EdgeInsets.only(top: 200, bottom: 200),
-          height: 300,
-          width: 1200,
-          color: Colors.white,
-          child: Text("Hallooo"),
-        )
-      ],
+    return FutureBuilder(
+      future: messages,
+      builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return GetMessageList(snapshot.data);
+          } else if (snapshot.hasError) {
+            return Text("Error${snapshot.error}");
+          }
+          return CircularProgressIndicator();
+      },
     );
   }
 }
