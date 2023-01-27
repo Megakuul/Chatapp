@@ -1,3 +1,7 @@
+# Chatapp
+
+
+
 Basic Chatapp, create and use simple chatrooms via 5 pin Code.
 
 It is desired to run on the AWS Cloud infrastructur on a high avaiable EKS Cluster.
