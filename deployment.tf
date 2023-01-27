@@ -188,7 +188,7 @@ variable "eks-role-arn" {
 }
 
 resource "aws_eks_cluster" "eks-cluster" {
-  name = "EKS-Cluster"
+  name = "eks-cluster"
   role_arn = var.eks-role-arn
   vpc_config {
     subnet_ids = [aws_subnet.eks-a-1.id, aws_subnet.eks-b-1.id, aws_subnet.eks-c-1.id, aws_subnet.eks-d-1.id, aws_subnet.eks-f-1.id]
@@ -232,6 +232,6 @@ resource "aws_eks_addon" "amazon_vpc_cni" {
 
 resource "null_resource" "send-ps-command" {
   provisioner "local-exec" {
-    command = "aws eks --region us-east-1 update-kubeconfig --name EKS-Cluster"
+    command = "aws eks --region us-east-1 update-kubeconfig --name ${aws_eks_cluster.eks-cluster.name}"
   }
 }
