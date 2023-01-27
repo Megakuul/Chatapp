@@ -1,10 +1,12 @@
+//Notice that this is not really good code, dont take an example of this one...
+
 import { Application, Request, Response } from "express";
-import { Connection, FieldInfo, QueryOptions } from "mysql";
+import {Connection} from "mysql2";
 
 const express = require("express");
 const cors = require("cors");
 const dotenv = require('dotenv');
-const mysql = require('mysql');
+const mysql = require("mysql2");
 
 const app: Application = express();
 
@@ -18,16 +20,16 @@ const DATABASE_USER = process.env.DATABASE_USER;
 const DATABASE_PASSWORD = process.env.DATABASE_PASSWORD;
 const API_PORT = process.env.API_PORT;
 
-
-const sqlcon: Connection = mysql.createConnection({
+const connection: Connection = mysql.createConnection({
     host: DATABASE_HOSTNAME,
     user: DATABASE_USER,
     password: DATABASE_PASSWORD,
     database: "chatapp",
-    insecureAuth : true
+    insecureAuth: true,
+    namedPlaceholders: true
 });
 
-sqlcon.connect(function(err) {
+connection.connect(function(err: any) {
     if (err) throw err;
     console.log("Connected to MySQL host at: " + DATABASE_HOSTNAME);
 });
@@ -36,48 +38,95 @@ app.listen(API_PORT, () => {
     console.log("Started API endpoint on port: " + API_PORT);
 });
 
+
 app.get("/messages", (req: Request, res: Response) => {
     const code = req.query.code;
     const count = req.query.count;
 
-    const query = "SELECT * FROM message where s"
-
-    sqlcon.query(query, (err: Error, result: any, fields: FieldInfo) => {
-        if (err!=null) throw err;
-        res.send(fields);
-    });
+    try {
+        connection.execute("SELECT * FROM message JOIN sessions ON message.fk_sessions_id=sessions.p_sessions_id WHERE sessions.joincode=:code LIMIT :count",
+            {code: code, count: count},
+            (err, rows) => {
+                if (err) throw err;
+                res.json({
+                    Success: true,
+                    payload: rows,
+                    Error: null
+                });
+            }
+        );
+    } catch (err) {
+        res.json({
+            Success: false,
+            Error: err
+        });
+    }
 });
 
-app.post("/session", (req: Request, res: Response) => {
+app.post("/createsession", async (req: Request, res: Response) => {
     const code = req.query.code;
 
-    const query = `
-        PREPARE createSession FROM 'INSERT INTO sessions (joincode) Values (?)';
-        SET @code = '${code}';
-        EXECUTE createSession USING @code;
-    `;
-
-    sqlcon.query(query, (err: Error, result: any, fields: FieldInfo) => {
-        if (err==null||err==undefined) {
-            res.json({
-                Success: false,
-                Error: err
-            });
-            return;
-        }
+    try {
+        //You officially entered the Callback Hell (never do this, I was jung and dumb...) instead use await
+        connection.execute("SELECT * FROM sessions WHERE joincode=?",
+            [code],
+            (err, rows) => {
+                if (err) console.error(err);
+                if (rows[0]!=undefined) {
+                    res.json({
+                        Success: false,
+                        Error: "Session already exists"
+                    });
+                    return;
+                }
+                connection.execute("INSERT INTO sessions (joincode) Values (?)",
+                    [code],
+                    (err, rows) => {
+                        if (err) throw err;
+                        res.json({
+                            Success: true,
+                            Error: null
+                        });
+                        return;
+                    }
+                );
+            }
+        );
+    } catch (err) {
         res.json({
-            Success: true,
-            Error: null
-        })
-    });
+            Success: false,
+            Error: err
+        });
+    }
 });
 
 app.post("/message", (req: Request, res: Response) => {
     const code = req.query.code;
+    const message = req.body.message;
 
-    const query = "INSERT INTO message (name, address) VALUES ('Company Inc', 'Highway 37')";
-
-    sqlcon.query(query, (err: Error, result: any, fields: FieldInfo) => {
-
-    });
+    try {
+        //Enter the Callbackhell again
+        connection.execute("SELECT p_sessions_id FROM sessions WHERE joincode=? LIMIT 1",
+            [code],
+            (err, rows) => {
+                if (err) console.error(err);
+                connection.execute("INSERT INTO message (message, fk_sessions_id) VALUES (:message, :fk_sessions_id)",
+                    {message: message, fk_sessions_id: rows[0].p_sessions_id},
+                    (err, rows) => {
+                        if (err) throw err;
+                        res.json({
+                            Success: true,
+                            Error: null
+                        });
+                    }
+                );
+            } 
+        );
+        
+    } catch (err) {
+        res.json({
+            Success: false,
+            Error: err
+        });
+    }
 });
