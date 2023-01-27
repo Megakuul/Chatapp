@@ -47,6 +47,8 @@ terraform apply -var "eks-role-arn=[youreksrolearn]"
 
 ```
 
+Now you can enter the **Database** and execute the **SQLconstructor** from the **sqlimport** directory on the **Database**.
+
 After the cluster is initialized, you can deploy the Containers to it:
 
 ```
