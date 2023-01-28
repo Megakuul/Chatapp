@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/apiConnector.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 import 'chat.dart';
@@ -7,7 +8,7 @@ void main() {
   runApp(const MyApp());
 }
 
-const String api_base_url = "http://localhost:6744";
+const String api_base_url = String.fromEnvironment("API_URL", defaultValue: "https://chatapi.megakuul.ch");
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
@@ -67,7 +68,10 @@ class _mainPageState extends State<mainPage> {
             ),
             onCompleted: (text) {
               pinControlr.clear();
-              Navigator.push(context, MaterialPageRoute(builder: (context) => chat(code: text)));
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+                createSession("$api_base_url/createsession", text);
+                return chat(code: text);
+              }));
             },
             onChanged: (text) {}
           ),

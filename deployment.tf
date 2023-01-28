@@ -203,9 +203,9 @@ resource "aws_eks_node_group" "eks-cluster-node-group" {
   subnet_ids = [aws_subnet.eks-a-1.id, aws_subnet.eks-b-1.id, aws_subnet.eks-c-1.id, aws_subnet.eks-d-1.id, aws_subnet.eks-f-1.id]
   node_role_arn = var.eks-role-arn
   scaling_config {
-    desired_size = 5
-    max_size = 5
-    min_size = 5
+    desired_size = 4
+    max_size = 4
+    min_size = 4
   }
   disk_size = 20
   instance_types = ["t3.medium"]

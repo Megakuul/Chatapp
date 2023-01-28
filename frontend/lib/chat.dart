@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/apiConnector.dart';
 import 'package:frontend/main.dart';
+import 'package:intl/intl.dart';
 
-int messagesToFetch = 50;
+int messagesToFetch = 100;
+late Future<Map<String,dynamic>> messages;
 
 class chat extends StatefulWidget {
   final String code;
@@ -16,12 +20,14 @@ class chat extends StatefulWidget {
 class _chatState extends State<chat> {
 
   final TextEditingController _textControlr = TextEditingController();
-  String api_url = "$api_base_url?code=";
+  String api_get_messages = "${api_base_url}/messages?code=";
+  String api_post_messages = "${api_base_url}/message?code=";
   final ScrollController _scrollControlr = ScrollController();
 
   @override
   Widget build (BuildContext context) {
-    api_url = "$api_base_url?code=${widget.code}";
+    api_get_messages = "${api_base_url}/messages?code=${widget.code}";
+    api_post_messages = "${api_base_url}/message?code=${widget.code}";
 
     return Scaffold(
         backgroundColor: const Color.fromRGBO(54,57,62,1),
@@ -41,7 +47,11 @@ class _chatState extends State<chat> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.vertical,
                   controller: _scrollControlr,
-                  child: Messages(api_url: api_url, messagesToFetch: 50),
+                  reverse: true,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top:20),
+                    child: Messages(api_url: api_get_messages),
+                  ),
                 )
               ),
               Expanded(
@@ -61,9 +71,9 @@ class _chatState extends State<chat> {
                         )
                     ),
                     onSubmitted: (text) async {
-                      if (await postMessage(api_url, {text: text})) {
+                      if (await postMessage(api_post_messages, {"message": text})) {
                         _textControlr.clear();
-                        _scrollControlr.jumpTo(_scrollControlr.position.maxScrollExtent);
+                        _scrollControlr.jumpTo(_scrollControlr.position.minScrollExtent);
                         return;
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -79,60 +89,67 @@ class _chatState extends State<chat> {
               )
             ],
           ),
-        )
+        ),
     );
   }
 }
 
 class Messages extends StatefulWidget {
-  final int messagesToFetch;
   final String api_url;
-  const Messages({super.key, required this.messagesToFetch, required this.api_url});
+  const Messages({super.key, required this.api_url});
 
   State<Messages> createState() => _MessagesState();
 }
 
 class _MessagesState extends State<Messages> {
 
-  Widget GetMessageList(Map<String, dynamic>? obj) {
+  Widget GetMessageList(dynamic obj) {
     List<Widget> tempList = [];
 
     if (obj==null) {
       return const Text("Failed to load Messages");
     }
 
-    List<dynamic> list = obj['messages'];
+    List<dynamic> list = obj["payload"];
 
     for (var value in list) {
       tempList.add(Container(
-        margin: const EdgeInsets.only(top: 30, bottom: 30),
+        margin: const EdgeInsets.only(top: 30, bottom: 30, right: 40, left: 40),
         padding: const EdgeInsets.all(30),
-        color: Colors.white,
+        decoration: BoxDecoration(
+          color: Colors.white12,
+          borderRadius: BorderRadius.circular(12)
+        ),
         child: Row(
           children: [
             Expanded(
               flex: 8,
-              child: Text(value["text"]),
+              child: Text(value["message"], style: const TextStyle(color: Colors.white, fontSize: 15)),
             ),
             Expanded(
-              child: Text(value["creationTime"]),
+              child: Text(DateFormat.Hm().format(DateTime.parse(value["creationtime"])), style: const TextStyle(color: Colors.white, fontSize: 15)),
             )
           ],
         ),
       ));
     }
-
     return Column(
       children: tempList
     );
   }
 
-  late Future<Map<String, dynamic>> messages;
+  Timer? _everySecond;
 
   @override
   void initState() {
     super.initState();
-    messages = fetchMessages(widget.api_url);
+
+    messages = fetchMessages("${widget.api_url}&count=$messagesToFetch");
+    _everySecond = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      setState(() {
+        messages = fetchMessages("${widget.api_url}&count=$messagesToFetch");
+      });
+    });
   }
 
   @override
@@ -141,7 +158,7 @@ class _MessagesState extends State<Messages> {
       future: messages,
       builder: (context, snapshot) {
           if (snapshot.hasData) {
-            //return GetMessageList(snapshot.data);
+            return GetMessageList(snapshot.data);
           } else if (snapshot.hasError) {
             return Text("Error${snapshot.error}");
           }

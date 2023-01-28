@@ -6,7 +6,7 @@ USE chatapp;
 
 CREATE TABLE sessions (
 	p_sessions_id int auto_increment not null,
-    joincode int not null,
+    joincode varchar(5) not null,
     Primary Key(p_sessions_id)
 );
 

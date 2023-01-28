@@ -44,7 +44,7 @@ app.get("/messages", (req: Request, res: Response) => {
     const count = req.query.count;
 
     try {
-        connection.execute("SELECT * FROM message JOIN sessions ON message.fk_sessions_id=sessions.p_sessions_id WHERE sessions.joincode=:code LIMIT :count",
+        connection.execute("SELECT * FROM message JOIN sessions ON message.fk_sessions_id=sessions.p_sessions_id WHERE sessions.joincode=:code ORDER BY message.creationtime ASC LIMIT :count",
             {code: code, count: count},
             (err, rows) => {
                 if (err) throw err;
