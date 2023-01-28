@@ -3,31 +3,65 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployment
+  name: chatapp-frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx
+      app: chatapp-frontend
   template:
     metadata:
       labels:
-        app: nginx
+        app: chatapp-frontend
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.17
+      - name: chatapp-frontend
+        image: chatapp-frontend:latest
         ports:
         - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx
+  name: chatapp-frontend
 spec:
   type: LoadBalancer
   selector:
-    app: nginx
+    app: chatapp-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatapp-api
+  template:
+    metadata:
+      labels:
+        app: chatapp-api
+    spec:
+      containers:
+      - name: chatapp-api
+        image: chatapp-api:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatapp-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: chatapp-api
   ports:
   - protocol: TCP
     port: 80

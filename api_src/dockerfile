@@ -2,6 +2,11 @@ FROM node:14
 
 WORKDIR /usr/src/app
 
+ENV DATABASE_HOSTNAME chatapp-db-01.cnyslyaiccv9.us-east-1.rds.amazonaws.com
+ENV DATABASE_USER api
+ENV DATABASE_PASSWORD sml12345
+ENV API_PORT 80
+
 COPY package*.json ./
 
 RUN npm install --only=production
