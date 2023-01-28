@@ -1,4 +1,3 @@
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -16,7 +15,7 @@ spec:
     spec:
       containers:
       - name: chatapp-frontend
-        image: chatapp-frontend:latest
+        image: megakuul/chatapp:frontend
         ports:
         - containerPort: 80
 ---
@@ -50,7 +49,7 @@ spec:
     spec:
       containers:
       - name: chatapp-api
-        image: chatapp-api:latest
+        image: megakuul/chatapp:api
         ports:
         - containerPort: 80
 ---
