@@ -53,6 +53,13 @@ terraform apply -var "eks-role-arn=[youreksrolearn]"
 
 Now you can enter the **Database** and execute the **SQLconstructor** from the **sqlimport** directory on the **Database**.
 
+Build the frontend container with the respective APIURL
+
+```
+.\frontend\buildapp.ps1 https://chatapi.megakuul.ch chatapp:frontend
+
+```
+
 After the cluster is initialized, you can deploy the Containers to it:
 
 ```

@@ -8,7 +8,8 @@ void main() {
   runApp(const MyApp());
 }
 
-const String api_base_url = String.fromEnvironment("API_URL", defaultValue: "https://chatapi.megakuul.ch");
+const String api_base_url = String.fromEnvironment("API_URL");
+
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);

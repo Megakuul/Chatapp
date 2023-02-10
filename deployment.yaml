@@ -15,10 +15,7 @@ spec:
     spec:
       containers:
       - name: chatapp-frontend
-        image: megakuul/chatapp:frontend
-        env:
-        - name: API_URL
-          value: https://ichbineineapi.io/
+        image: chatapp:frontend
         ports:
         - containerPort: 80
 ---
