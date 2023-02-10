@@ -18,7 +18,6 @@ const connection = mysql.createConnection({
     user: DATABASE_USER,
     password: DATABASE_PASSWORD,
     database: "chatapp",
-    insecureAuth: true,
     namedPlaceholders: true
 });
 connection.connect(function (err) {
@@ -32,23 +31,20 @@ app.listen(API_PORT, () => {
 app.get("/messages", (req, res) => {
     const code = req.query.code;
     const count = req.query.count;
-    try {
-        connection.execute("SELECT * FROM message JOIN sessions ON message.fk_sessions_id=sessions.p_sessions_id WHERE sessions.joincode=:code LIMIT :count", { code: code, count: count }, (err, rows) => {
-            if (err)
-                throw err;
+    connection.execute("SELECT * FROM message JOIN sessions ON message.fk_sessions_id=sessions.p_sessions_id WHERE sessions.joincode=:code ORDER BY message.creationtime ASC LIMIT :count", { code: code, count: count }, (err, rows) => {
+        if (err) {
             res.json({
-                Success: true,
-                payload: rows,
-                Error: null
+                Success: false,
+                payload: "Cannot fetch data",
+                Error: err
             });
-        });
-    }
-    catch (err) {
+        }
         res.json({
-            Success: false,
-            Error: err
+            Success: true,
+            payload: rows,
+            Error: null
         });
-    }
+    });
 });
 app.post("/createsession", async (req, res) => {
     const code = req.query.code;

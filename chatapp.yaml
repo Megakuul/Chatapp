@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chatapp-frontend
+  name: chatapp-frontend-deployment
 spec:
   replicas: 1
   selector:
@@ -36,7 +36,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-deployment
+  name: chatapp-api-deployment
 spec:
   replicas: 1
   selector:
