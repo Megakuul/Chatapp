@@ -16,6 +16,9 @@ spec:
       containers:
       - name: chatapp-frontend
         image: megakuul/chatapp:frontend
+        env:
+        - name: API_URL
+          value: https://ichbineineapi.io/
         ports:
         - containerPort: 80
 ---
@@ -50,6 +53,15 @@ spec:
       containers:
       - name: chatapp-api
         image: megakuul/chatapp:api
+        env:
+        - name: DATABASE_HOSTNAME
+          value: 192.168.1.40
+        - name: DATABASE_USER
+          value: "apiuser"
+        - name: DATABASE_PASSWORD
+          value: "superpassword"
+        - name: API_PORT
+          value: 7000
         ports:
         - containerPort: 80
 ---
