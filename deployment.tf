@@ -244,6 +244,10 @@ resource "aws_iam_role_policy_attachment" "attach_AmazonEC2ContainerRegistryRead
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+resource "aws_iam_role_policy_attachment" "attach_AmazonEKS_CNI_Policy" {
+  role       = aws_iam_role.createEKSNodeRole.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
 
 
 data "aws_caller_identity" "current" {}
