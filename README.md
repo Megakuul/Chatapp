@@ -47,7 +47,7 @@ terraform plan
 Execute Terraform Script:
 
 ```
-terraform apply -var "eks-role-arn=[youreksrolearn]"
+terraform apply
 
 ```
 
