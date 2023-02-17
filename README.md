@@ -23,13 +23,6 @@ It is desired to run on the AWS Cloud infrastructur on a high avaiable EKS Clust
 
 These instructions only work with the AWS infrastructur. You also need the AWS Cli Tool, aswell as the Terraform and Kubctl Tool.
 
-Clone Git Repository:
-
-```
-git clone https://github.com/Megakuul/Chatapp.git
-
-```
-
 Init Terraform provider:
 
 ```
@@ -53,17 +46,19 @@ terraform apply
 
 Now you can enter the **Database** and execute the **SQLconstructor** from the **sqlimport** directory on the **Database**.
 
-Build the frontend container with the respective APIURL
-
+In the frontend container you have to reference the backend container-url. This can be done by entering the docker frontend container with
 ```
-.\frontend\buildapp.ps1 https://chatapi.megakuul.ch chatapp:frontend
-
+docker exec -it [containerid]
+```
+In the /assets/assets/ directory you can find the **chatapp.conf.env** file, change the API_URL variable to your backend URL:
+```
+echo "API_URL=https://yourapi:5000" > chatapp.conf.env
 ```
 
 After the cluster is initialized, you can deploy the Containers to it:
 
 ```
-kubectl apply -f .\chatapp.yaml
+kubectl apply -f .\deployment.yaml
 
 ```
 
