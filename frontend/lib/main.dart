@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/apiConnector.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'chat.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: "assets/chatapp.conf.env");
   runApp(const MyApp());
 }
 
-const String api_base_url = String.fromEnvironment("API_URL");
+final String api_base_url = dotenv.env["API_URL"] ?? "URL NOT FOUND";
 
 
 class MyApp extends StatelessWidget {
