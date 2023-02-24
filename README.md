@@ -46,15 +46,6 @@ terraform apply
 
 Now you can enter the **Database** and execute the **SQLconstructor** from the **sqlimport** directory on the **Database**.
 
-In the frontend container you have to reference the backend container-url. This can be done by entering the docker frontend container with
-```
-docker exec -it [containerid]
-```
-In the /assets/assets/ directory you can find the **chatapp.conf.env** file, change the API_URL variable to your backend URL:
-```
-echo "API_URL=https://yourapi:5000" > chatapp.conf.env
-```
-
 After the cluster is initialized, you can deploy the Containers to it:
 
 ```

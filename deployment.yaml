@@ -16,6 +16,9 @@ spec:
       containers:
       - name: chatapp-frontend
         image: megakuul/chatapp:frontend
+        env:
+        - name: API_URL
+          value: "http://192.168.1.40:7000"
         ports:
         - containerPort: 80
 ---
@@ -52,13 +55,13 @@ spec:
         image: megakuul/chatapp:api
         env:
         - name: DATABASE_HOSTNAME
-          value: 192.168.1.40
+          value: "192.168.1.40"
         - name: DATABASE_USER
           value: "apiuser"
         - name: DATABASE_PASSWORD
           value: "superpassword"
         - name: API_PORT
-          value: 7000
+          value: "7000"
         ports:
         - containerPort: 80
 ---
