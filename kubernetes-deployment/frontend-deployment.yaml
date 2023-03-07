@@ -1,0 +1,86 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: chatapp
+  name: chatapp-frontend
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chatapp-frontend
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chatapp-frontend
+    spec:
+      containers:
+      - image: megakuul/chatapp:frontend
+        imagePullPolicy: Always
+        name: chatapp-frontend
+        resources:
+          requests:
+            cpu: "20m"
+            memory: "100Mi"
+          limits:
+            cpu: "30m"
+            memory: "150Mi"
+        env:
+        - name: API_URL
+          value: "<https://Domain>"
+        ports:
+        - containerPort: 80
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: chatapp-frontend-hpa
+  namespace: chatapp
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: chatapp-frontend
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: chatapp
+  name: chatapp-frontend-svc
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: chatapp-frontend
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  namespace: chatapp
+  name: chatapp-frontend-ingress
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: <cert arn>
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-2016-08
+spec:
+  ingressClassName: alb
+  rules:
+    - host: <chat domain>
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: chatapp-frontend-svc
+              port:
+                number: 80
