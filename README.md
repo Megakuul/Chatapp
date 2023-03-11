@@ -12,6 +12,7 @@ It is desired to run on the AWS Cloud infrastructur on a high avaiable EKS Clust
 - Expressjs 			→ Middleend
 - MySQL (RDS) 	→ Database/Backend
 - Docker 				→ Containerization
+- Kubernetes        → Container orchestration
 - AWS 						→ Cloud infrastructur
 - Terraform 			→ Infrastructur as Code
 
