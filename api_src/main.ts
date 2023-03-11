@@ -45,18 +45,27 @@ app.get("/messages", (req: Request, res: Response) => {
     connection.execute("SELECT * FROM message JOIN sessions ON message.fk_sessions_id=sessions.p_sessions_id WHERE sessions.joincode=:code ORDER BY message.creationtime ASC LIMIT :count",
         {code: code, count: count},
         (err, rows) => {
-            if (err) {
+            try {
+                if (err) {
+                    res.json({
+                        Success: false,
+                        payload: "Cannot fetch data",
+                        Error: err
+                    });
+                    return;
+                }
+                res.json({
+                    Success: true,
+                    payload: rows,
+                    Error: null
+                });
+            } catch (err) {
                 res.json({
                     Success: false,
-                    payload: "Cannot fetch data",
+                    payload: "Failed to process query",
                     Error: err
-                })
+                });
             }
-            res.json({
-                Success: true,
-                payload: rows,
-                Error: null
-            });
         }
     );
 });
