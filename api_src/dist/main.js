@@ -1,6 +1,10 @@
 "use strict";
 //Notice that this is not really good code, dont take an example of this one...
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+const mk_retry_1 = __importDefault(require("mk-retry"));
 const express = require("express");
 const cors = require("cors");
 const dotenv = require('dotenv');
@@ -13,20 +17,34 @@ const DATABASE_HOSTNAME = process.env.DATABASE_HOSTNAME;
 const DATABASE_USER = process.env.DATABASE_USER;
 const DATABASE_PASSWORD = process.env.DATABASE_PASSWORD;
 const API_PORT = process.env.API_PORT;
-const connection = mysql.createConnection({
+const connectionData = {
     host: DATABASE_HOSTNAME,
     user: DATABASE_USER,
     password: DATABASE_PASSWORD,
     database: "chatapp",
     namedPlaceholders: true
-});
+};
+let connection = mysql.createConnection(connectionData);
 connection.connect(function (err) {
     if (err)
         throw err;
-    console.log("Connected to MySQL host at: " + DATABASE_HOSTNAME);
+    console.info("Connected to MySQL host at: " + DATABASE_HOSTNAME);
+});
+connection.on('error', function (err) {
+    console.error("Connection interrupted...");
+    console.error("Error: " + err);
+    console.info("Reconnecting to database...");
+    (0, mk_retry_1.default)(async () => {
+        connection = mysql.createConnection(connectionData);
+        connection.connect(function (err) {
+            if (err)
+                throw err;
+        });
+        console.info("Connected to MySQL host at: " + DATABASE_HOSTNAME);
+    });
 });
 app.listen(API_PORT, () => {
-    console.log("Started API endpoint on port: " + API_PORT);
+    console.info("Started API endpoint on port: " + API_PORT);
 });
 app.get("/messages", (req, res) => {
     const code = req.query.code;

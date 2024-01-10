@@ -4,7 +4,8 @@
   "description": "",
   "main": "dist/main.js",
   "scripts": {
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "compile": "npx tsc"
   },
   "author": "Linus Moser",
   "license": "MIT",
@@ -14,6 +15,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "mk-retry": "^1.0.1",
     "mysql2": "^3.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
   }
 }

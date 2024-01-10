@@ -2,6 +2,7 @@
 
 import { Application, Request, Response } from "express";
 import {Connection} from "mysql2";
+import retry from "mk-retry";
 
 const express = require("express");
 const cors = require("cors");
@@ -20,21 +21,35 @@ const DATABASE_USER = process.env.DATABASE_USER;
 const DATABASE_PASSWORD = process.env.DATABASE_PASSWORD;
 const API_PORT = process.env.API_PORT;
 
-const connection: Connection = mysql.createConnection({
+const connectionData = {
     host: DATABASE_HOSTNAME,
     user: DATABASE_USER,
     password: DATABASE_PASSWORD,
     database: "chatapp",
     namedPlaceholders: true
-});
+};
+let connection: Connection = mysql.createConnection(connectionData);
 
 connection.connect(function(err: any) {
     if (err) throw err;
-    console.log("Connected to MySQL host at: " + DATABASE_HOSTNAME);
+    console.info("Connected to MySQL host at: " + DATABASE_HOSTNAME);
+});
+
+connection.on('error', function(err: any) {
+    console.error("Connection interrupted...");
+    console.error("Error: "+err);
+    console.info("Reconnecting to database...")
+    retry(async () => {
+        connection = mysql.createConnection(connectionData);
+        connection.connect(function(err: any) {
+            if (err) throw err;
+        });
+        console.info("Connected to MySQL host at: " + DATABASE_HOSTNAME);
+    });
 });
 
 app.listen(API_PORT, () => {
-    console.log("Started API endpoint on port: " + API_PORT);
+    console.info("Started API endpoint on port: " + API_PORT);
 });
 
 
